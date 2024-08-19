@@ -1014,9 +1014,9 @@ dependencies = [
 
 [[package]]
 name = "rkyv_derive"
-version = "0.8.0-alpha.1"
+version = "0.8.0-alpha.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d936536583355d1ef18b9473dbe2a59d0c9ffff278a92c171feb30f2489dd0a"
+checksum = "7bca443ef372feb64e7cc86afc44c38fcf3deb17ea4f0491b0b1ca1fa460083e"
 dependencies = [
  "proc-macro2",
  "quote",
