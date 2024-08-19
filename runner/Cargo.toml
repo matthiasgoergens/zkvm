@@ -17,8 +17,6 @@ env_logger = { version = "0.11" }
 im = "15.1"
 itertools = "0.13"
 log = "0.4"
-mozak-sdk = { path = "../sdk" }
-plonky2 = { workspace = true, default-features = false }
 proptest = { version = "1.5", optional = true }
 serde = { version = "1.0", features = ["derive"] }
 
@@ -32,12 +30,8 @@ proptest = "1.5"
 serde_json = "1.0"
 test-case = "3.3"
 
-[[bench]]
-harness = false
-name = "fibonacci"
-
 [features]
 default = ["std", "im/serde"]
-parallel = ["plonky2/parallel", "criterion/rayon"]
+parallel = ["criterion/rayon"]
 std = ["anyhow/std"]
 test = ["proptest"]

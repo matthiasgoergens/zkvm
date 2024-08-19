@@ -1,7 +1,7 @@
 use bitfield::{bitfield, BitRange};
 use log::warn;
-use mozak_sdk::core::reg_abi::{REG_A0, REG_A1, REG_ZERO};
 
+use crate::constants::reg_abi::{REG_A0, REG_A1, REG_ZERO};
 use crate::instruction::{Args, DecodingError, Instruction, Op, NOP};
 
 /// Extract a u32 that represents the immediate from segments with zeros right

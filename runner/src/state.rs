@@ -1,28 +1,15 @@
 use std::iter::once;
-use std::marker::PhantomData;
 use std::rc::Rc;
 
 use anyhow::{anyhow, Result};
 use im::hashmap::HashMap;
 use im::HashSet;
 use log::trace;
-use mozak_sdk::core::constants::DIGEST_BYTES;
-use plonky2::hash::hash_types::RichField;
 use serde::{Deserialize, Serialize};
 
 use crate::code::Code;
 use crate::elf::{Data, Program};
 use crate::instruction::{Args, DecodingError, Instruction};
-use crate::poseidon2;
-
-#[derive(Debug, Clone)]
-pub struct CommitmentTape(pub [u8; DIGEST_BYTES]);
-
-impl std::ops::Deref for CommitmentTape {
-    type Target = [u8; DIGEST_BYTES];
-
-    fn deref(&self) -> &Self::Target { &self.0 }
-}
 
 pub fn read_bytes(buf: &[u8], index: &mut usize, num_bytes: usize) -> Vec<u8> {
     let remaining_len = buf.len() - *index;
@@ -60,7 +47,7 @@ pub fn read_bytes(buf: &[u8], index: &mut usize, num_bytes: usize) -> Vec<u8> {
 /// instruction cache on many CPUs.  But we deliberately don't support that
 /// usecase.
 #[derive(Clone, Debug)]
-pub struct State<F: RichField> {
+pub struct State {
     /// Clock used to count how many execution are executed
     /// Also used to avoid infinite loop
     pub clk: u64,
@@ -70,12 +57,6 @@ pub struct State<F: RichField> {
     pub memory: StateMemory,
     pub private_tape: StorageDeviceTape,
     pub public_tape: StorageDeviceTape,
-    pub call_tape: StorageDeviceTape,
-    pub event_tape: StorageDeviceTape,
-    pub events_commitment_tape: CommitmentTape,
-    pub cast_list_commitment_tape: CommitmentTape,
-    pub self_prog_id_tape: [u8; DIGEST_BYTES],
-    _phantom: PhantomData<F>,
 }
 
 #[allow(clippy::module_name_repetitions)]
@@ -132,7 +113,7 @@ impl From<Data> for StorageDeviceTape {
 /// execution clocks (1 and above) from `clk` value of 0 which is
 /// reserved for any initialisation concerns. e.g. memory initialization
 /// prior to program execution, register initialization etc.
-impl<F: RichField> Default for State<F> {
+impl Default for State {
     fn default() -> Self {
         Self {
             clk: 2,
@@ -142,18 +123,12 @@ impl<F: RichField> Default for State<F> {
             memory: StateMemory::default(),
             private_tape: StorageDeviceTape::default(),
             public_tape: StorageDeviceTape::default(),
-            call_tape: StorageDeviceTape::default(),
-            event_tape: StorageDeviceTape::default(),
-            events_commitment_tape: CommitmentTape([0; DIGEST_BYTES]),
-            cast_list_commitment_tape: CommitmentTape([0; DIGEST_BYTES]),
-            self_prog_id_tape: [0; 32],
-            _phantom: PhantomData,
         }
     }
 }
 
 #[allow(clippy::similar_names)]
-impl<F: RichField> From<Program> for State<F> {
+impl From<Program> for State {
     fn from(
         Program {
             ro_code: Code(_),
@@ -162,7 +137,7 @@ impl<F: RichField> From<Program> for State<F> {
             entry_point: pc,
         }: Program,
     ) -> Self {
-        let state: State<F> = State::default();
+        let state: State = State::default();
 
         Self {
             pc,
@@ -185,11 +160,6 @@ pub enum StorageDeviceOpcode {
     None,
     StorePrivate,
     StorePublic,
-    StoreCallTape,
-    StoreEventTape,
-    StoreEventsCommitmentTape,
-    StoreCastListCommitmentTape,
-    StoreSelfProgIdTape,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -201,7 +171,7 @@ pub struct StorageDeviceEntry {
 
 /// Auxiliary information about the instruction execution
 #[derive(Debug, Clone, Default)]
-pub struct Aux<F: RichField> {
+pub struct Aux {
     // This could be an Option<u32>, but given how RISC-V instruction are specified,
     // 0 serves as a default value just fine.
     pub dst_val: u32,
@@ -212,7 +182,6 @@ pub struct Aux<F: RichField> {
     pub op1: u32,
     pub op2: u32,
     pub op2_raw: u32,
-    pub poseidon2: Option<poseidon2::Entry<F>>,
     pub storage_device_entry: Option<StorageDeviceEntry>,
 }
 
@@ -220,14 +189,9 @@ pub struct Aux<F: RichField> {
 pub struct RawTapes {
     pub private_tape: Vec<u8>,
     pub public_tape: Vec<u8>,
-    pub call_tape: Vec<u8>,
-    pub event_tape: Vec<u8>,
-    pub events_commitment_tape: [u8; DIGEST_BYTES],
-    pub cast_list_commitment_tape: [u8; DIGEST_BYTES],
-    pub self_prog_id_tape: [u8; 32],
 }
 
-impl<F: RichField> State<F> {
+impl State {
     #[must_use]
     #[allow(clippy::similar_names)]
     /// # Panics
@@ -253,23 +217,12 @@ impl<F: RichField> State<F> {
                 data: raw_tapes.public_tape.into(),
                 read_index: 0,
             },
-            call_tape: StorageDeviceTape {
-                data: raw_tapes.call_tape.into(),
-                read_index: 0,
-            },
-            event_tape: StorageDeviceTape {
-                data: raw_tapes.event_tape.into(),
-                read_index: 0,
-            },
-            cast_list_commitment_tape: CommitmentTape(raw_tapes.cast_list_commitment_tape),
-            events_commitment_tape: CommitmentTape(raw_tapes.events_commitment_tape),
-            self_prog_id_tape: raw_tapes.self_prog_id_tape,
             ..Default::default()
         }
     }
 
     #[must_use]
-    pub fn register_op<Fun>(self, data: &Args, op: Fun) -> (Aux<F>, Self)
+    pub fn register_op<Fun>(self, data: &Args, op: Fun) -> (Aux, Self)
     where
         Fun: FnOnce(u32, u32) -> u32, {
         let op1 = self.get_register_value(data.rs1);
@@ -295,7 +248,7 @@ impl<F: RichField> State<F> {
         data: &Args,
         bytes: u32,
         op: fn(&[u8; 4]) -> (u32, u32),
-    ) -> (Aux<F>, Self) {
+    ) -> (Aux, Self) {
         let addr: u32 = self.get_register_value(data.rs2).wrapping_add(data.imm);
         let mut mem_addresses_used: Vec<u32> = (0..4).map(|i| addr.wrapping_add(i)).collect();
 
@@ -322,7 +275,7 @@ impl<F: RichField> State<F> {
 
     #[must_use]
     #[allow(clippy::missing_panics_doc)]
-    pub fn branch_op(self, data: &Args, op: fn(u32, u32) -> bool) -> (Aux<F>, Self) {
+    pub fn branch_op(self, data: &Args, op: fn(u32, u32) -> bool) -> (Aux, Self) {
         let op1 = self.get_register_value(data.rs1);
         let op2 = self.get_register_value(data.rs2);
         (
@@ -336,7 +289,7 @@ impl<F: RichField> State<F> {
     }
 }
 
-impl<F: RichField> State<F> {
+impl State {
     #[must_use]
     pub fn halt(mut self) -> Self {
         self.halted = true;

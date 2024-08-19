@@ -3,10 +3,9 @@ use std::collections::HashSet;
 use anyhow::Result;
 use im::hashmap::HashMap;
 use itertools::{chain, izip};
-use mozak_sdk::core::ecall;
-use plonky2::field::goldilocks_field::GoldilocksField;
 use serde::{Deserialize, Serialize};
 
+use crate::constants::ecall;
 use crate::decode::{decode_instruction, ECALL};
 use crate::elf::Program;
 use crate::instruction::{Args, DecodingError, Instruction, Op};
@@ -68,7 +67,7 @@ pub fn execute_code_with_ro_memory(
     rw_mem: &[(u32, u8)],
     regs: &[(u8, u32)],
     raw_tapes: RawTapes,
-) -> (Program, ExecutionRecord<GoldilocksField>) {
+) -> (Program, ExecutionRecord) {
     let _ = env_logger::try_init();
     let ro_code = Code(
         izip!(
@@ -112,6 +111,6 @@ pub fn execute(
     code: impl IntoIterator<Item = Instruction>,
     rw_mem: &[(u32, u8)],
     regs: &[(u8, u32)],
-) -> (Program, ExecutionRecord<GoldilocksField>) {
+) -> (Program, ExecutionRecord) {
     execute_code_with_ro_memory(code, &[], rw_mem, regs, RawTapes::default())
 }

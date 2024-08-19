@@ -1,6 +1,5 @@
 use anyhow::{anyhow, Result};
 use itertools::Itertools;
-use plonky2::hash::hash_types::RichField;
 
 use crate::elf::Program;
 use crate::instruction::{Args, Instruction, Op};
@@ -93,9 +92,9 @@ pub fn lh(mem: &[u8; 4]) -> (u32, u32) {
 #[must_use]
 pub fn lw(mem: &[u8; 4]) -> (u32, u32) { dup(u32::from_le_bytes(*mem)) }
 
-impl<F: RichField> State<F> {
+impl State {
     #[must_use]
-    pub fn jalr(self, inst: &Args) -> (Aux<F>, Self) {
+    pub fn jalr(self, inst: &Args) -> (Aux, Self) {
         let new_pc = self.get_register_value(inst.rs1).wrapping_add(inst.imm) & !1;
         let dst_val = self.get_pc().wrapping_add(4);
         (
@@ -113,7 +112,7 @@ impl<F: RichField> State<F> {
     /// Panics in case we intend to store to a read-only location
     /// TODO: Review the decision to panic.  We might also switch to using a
     /// Result, so that the caller can handle this.
-    pub fn store(self, inst: &Args, bytes: u32) -> (Aux<F>, Self) {
+    pub fn store(self, inst: &Args, bytes: u32) -> (Aux, Self) {
         let mask = u32::MAX >> (32 - 8 * bytes);
         let raw_value: u32 = self.get_register_value(inst.rs1) & mask;
         let addr = self.get_register_value(inst.rs2).wrapping_add(inst.imm);
@@ -140,7 +139,7 @@ impl<F: RichField> State<F> {
     ///
     /// Errors if the program contains an instruction with an unsupported
     /// opcode.
-    pub fn execute_instruction(self, program: &Program) -> Result<(Aux<F>, Instruction, Self)> {
+    pub fn execute_instruction(self, program: &Program) -> Result<(Aux, Instruction, Self)> {
         let inst = self
             .current_instruction(program)
             .ok_or(anyhow!("Can't find instruction."))?
@@ -233,13 +232,13 @@ impl<F: RichField> State<F> {
 /// Each row corresponds to the state of the VM _just before_ executing the
 /// instruction that the program counter points to.
 #[derive(Debug, Clone)]
-pub struct Row<F: RichField> {
-    pub state: State<F>,
-    pub aux: Aux<F>,
+pub struct Row {
+    pub state: State,
+    pub aux: Aux,
     pub instruction: Instruction,
 }
 
-impl<F: RichField> Row<F> {
+impl Row {
     #[must_use]
     pub fn new(op: Op) -> Self {
         Row {
@@ -252,18 +251,18 @@ impl<F: RichField> Row<F> {
 
 /// Unconstrained Trace produced by running the code
 #[derive(Debug, Default)]
-pub struct ExecutionRecord<F: RichField> {
+pub struct ExecutionRecord {
     /// Each row holds the state of the vm and auxiliary
     /// information associated
-    pub executed: Vec<Row<F>>,
+    pub executed: Vec<Row>,
     /// The last state of the vm before the program halts
-    pub last_state: State<F>,
+    pub last_state: State,
 }
 
-impl<F: RichField> ExecutionRecord<F> {
+impl ExecutionRecord {
     /// Returns the state just before the final state
     #[must_use]
-    pub fn state_before_final(&self) -> &State<F> { &self.executed[self.executed.len() - 2].state }
+    pub fn state_before_final(&self) -> &State { &self.executed[self.executed.len() - 2].state }
 }
 
 /// Execute a program
@@ -279,10 +278,7 @@ impl<F: RichField> ExecutionRecord<F> {
 /// This is a temporary measure to catch problems with accidental infinite
 /// loops. (Matthias had some trouble debugging a problem with jumps
 /// earlier.)
-pub fn step<F: RichField>(
-    program: &Program,
-    mut last_state: State<F>,
-) -> Result<ExecutionRecord<F>> {
+pub fn step(program: &Program, mut last_state: State) -> Result<ExecutionRecord> {
     let mut executed = vec![];
     while !last_state.has_halted() {
         let (aux, instruction, new_state) = last_state.clone().execute_instruction(program)?;
@@ -320,7 +316,7 @@ pub fn step<F: RichField>(
             println!("{percentage:6.2?}%\t{count:10} {op:?}");
         }
     }
-    Ok(ExecutionRecord::<F> {
+    Ok(ExecutionRecord {
         executed,
         last_state,
     })
@@ -331,7 +327,6 @@ pub fn step<F: RichField>(
 #[allow(clippy::cast_possible_wrap)]
 mod tests {
     use im::HashMap;
-    use plonky2::field::goldilocks_field::GoldilocksField;
     use proptest::prelude::ProptestConfig;
     use proptest::{prop_assume, proptest};
 
@@ -344,7 +339,7 @@ mod tests {
         code: impl IntoIterator<Item = Instruction>,
         mem: &[(u32, u8)],
         regs: &[(u8, u32)],
-    ) -> ExecutionRecord<GoldilocksField> {
+    ) -> ExecutionRecord {
         code::execute(code, mem, regs).1
     }
 
@@ -1357,11 +1352,7 @@ mod tests {
 
     #[must_use]
     #[allow(clippy::missing_panics_doc)]
-    fn simple_test(
-        exit_at: u32,
-        mem: &[(u32, u32)],
-        regs: &[(u8, u32)],
-    ) -> ExecutionRecord<GoldilocksField> {
+    fn simple_test(exit_at: u32, mem: &[(u32, u32)], regs: &[(u8, u32)]) -> ExecutionRecord {
         // TODO(Matthias): stick this line into proper common setup?
         let _ = env_logger::try_init();
         let exit_inst =

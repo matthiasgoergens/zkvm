@@ -7,7 +7,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::hint::black_box;
 
-use mozak_sdk::core::ecall::ioread_public;
+use crate::constants::ecall::ioread_public;
 
 fn main() {
     let n = {

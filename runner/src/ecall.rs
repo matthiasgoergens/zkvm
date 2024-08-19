@@ -2,14 +2,12 @@
 
 use std::str::from_utf8;
 
-use mozak_sdk::core::ecall;
-use mozak_sdk::core::reg_abi::{REG_A0, REG_A1, REG_A2};
-use plonky2::hash::hash_types::RichField;
-
+use crate::constants::ecall;
+use crate::constants::reg_abi::{REG_A0, REG_A1, REG_A2};
 use crate::state::{read_bytes, Aux, State, StorageDeviceEntry, StorageDeviceOpcode};
 
-impl<F: RichField> State<F> {
-    fn ecall_halt(self) -> (Aux<F>, Self) {
+impl State {
+    fn ecall_halt(self) -> (Aux, Self) {
         // Note: we don't advance the program counter for 'halt'.
         // That is we treat 'halt' like an endless loop.
         (
@@ -25,7 +23,7 @@ impl<F: RichField> State<F> {
     ///
     /// Panics if while executing `IO_READ`, I/O tape does not have sufficient
     /// bytes.
-    fn ecall_read(mut self, op: StorageDeviceOpcode) -> (Aux<F>, Self) {
+    fn ecall_read(mut self, op: StorageDeviceOpcode) -> (Aux, Self) {
         let buffer_start = self.get_register_value(REG_A1);
         let num_bytes_requested = self.get_register_value(REG_A2);
         log::trace!("ECALL {:?}", op);
@@ -39,31 +37,6 @@ impl<F: RichField> State<F> {
             StorageDeviceOpcode::StorePrivate => read_bytes(
                 &self.private_tape.data,
                 &mut self.private_tape.read_index,
-                num_bytes_requested as usize,
-            ),
-            StorageDeviceOpcode::StoreCallTape => read_bytes(
-                &self.call_tape.data,
-                &mut self.call_tape.read_index,
-                num_bytes_requested as usize,
-            ),
-            StorageDeviceOpcode::StoreEventTape => read_bytes(
-                &self.event_tape.data,
-                &mut self.event_tape.read_index,
-                num_bytes_requested as usize,
-            ),
-            StorageDeviceOpcode::StoreEventsCommitmentTape => read_bytes(
-                &self.events_commitment_tape.0,
-                &mut 0,
-                num_bytes_requested as usize,
-            ),
-            StorageDeviceOpcode::StoreCastListCommitmentTape => read_bytes(
-                &self.cast_list_commitment_tape.0,
-                &mut 0,
-                num_bytes_requested as usize,
-            ),
-            StorageDeviceOpcode::StoreSelfProgIdTape => read_bytes(
-                &self.self_prog_id_tape,
-                &mut 0,
                 num_bytes_requested as usize,
             ),
             StorageDeviceOpcode::None => panic!(),
@@ -99,7 +72,7 @@ impl<F: RichField> State<F> {
     /// # Panics
     ///
     /// Panics if Vec<u8> to string conversion fails.
-    fn ecall_panic(self) -> (Aux<F>, Self) {
+    fn ecall_panic(self) -> (Aux, Self) {
         let msg_ptr = self.get_register_value(REG_A1);
         let msg_len = self.get_register_value(REG_A2);
         let mut msg_vec = vec![];
@@ -116,7 +89,7 @@ impl<F: RichField> State<F> {
     /// # Panics
     ///
     /// Panics if Vec<u8> to string conversion fails.
-    fn ecall_trace_log(self) -> (Aux<F>, Self) {
+    fn ecall_trace_log(self) -> (Aux, Self) {
         let msg_ptr = self.get_register_value(REG_A1);
         let msg_len = self.get_register_value(REG_A2);
         let mut msg_vec = vec![];
@@ -131,7 +104,7 @@ impl<F: RichField> State<F> {
     }
 
     #[must_use]
-    pub fn ecall(self) -> (Aux<F>, Self) {
+    pub fn ecall(self) -> (Aux, Self) {
         log::trace!(
             "ecall '{}' at clk: {}",
             ecall::log(self.get_register_value(REG_A0)),
@@ -141,15 +114,7 @@ impl<F: RichField> State<F> {
             ecall::HALT => self.ecall_halt(),
             ecall::PRIVATE_TAPE => self.ecall_read(StorageDeviceOpcode::StorePrivate),
             ecall::PUBLIC_TAPE => self.ecall_read(StorageDeviceOpcode::StorePublic),
-            ecall::CALL_TAPE => self.ecall_read(StorageDeviceOpcode::StoreCallTape),
-            ecall::EVENT_TAPE => self.ecall_read(StorageDeviceOpcode::StoreEventTape),
-            ecall::EVENTS_COMMITMENT_TAPE =>
-                self.ecall_read(StorageDeviceOpcode::StoreEventsCommitmentTape),
-            ecall::CAST_LIST_COMMITMENT_TAPE =>
-                self.ecall_read(StorageDeviceOpcode::StoreCastListCommitmentTape),
-            ecall::SELF_PROG_ID_TAPE => self.ecall_read(StorageDeviceOpcode::StoreSelfProgIdTape),
             ecall::PANIC => self.ecall_panic(),
-            ecall::POSEIDON2 => self.ecall_poseidon2(),
             ecall::VM_TRACE_LOG => self.ecall_trace_log(),
             _ => (Aux::default(), self.bump_pc()),
         }

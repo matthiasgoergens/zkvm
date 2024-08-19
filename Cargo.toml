@@ -18,15 +18,9 @@
 exclude = ["sdk"]
 members = [
   "build-scripts",
-  "circuits",
   "cli",
   "examples-builder",
-  "expr",
-  "node",
-  "recproofs",
   "runner",
-  "signatures",
-  "wasm-demo",
 ]
 resolver = "2"
 
