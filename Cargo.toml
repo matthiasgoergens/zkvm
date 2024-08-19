@@ -17,7 +17,6 @@
 [workspace]
 exclude = ["sdk"]
 members = [
-  "build-scripts",
   "cli",
   "examples-builder",
   "runner",
