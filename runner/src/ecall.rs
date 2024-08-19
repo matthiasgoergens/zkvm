@@ -29,16 +29,10 @@ impl State {
         log::trace!("ECALL {:?}", op);
 
         let data = match op {
-            StorageDeviceOpcode::StorePublic => read_bytes(
-                &self.public_tape.data,
-                &mut self.public_tape.read_index,
-                num_bytes_requested as usize,
-            ),
-            StorageDeviceOpcode::StorePrivate => read_bytes(
-                &self.private_tape.data,
-                &mut self.private_tape.read_index,
-                num_bytes_requested as usize,
-            ),
+            StorageDeviceOpcode::StorePublic =>
+                read_bytes(&mut self.public_tape.data, num_bytes_requested as usize),
+            StorageDeviceOpcode::StorePrivate =>
+                read_bytes(&mut self.private_tape.data, num_bytes_requested as usize),
             StorageDeviceOpcode::None => panic!(),
         };
         let data_len = u32::try_from(data.len()).expect("cannot fit data.len() into u32");
@@ -52,7 +46,7 @@ impl State {
                 storage_device_entry: Some(StorageDeviceEntry {
                     addr: buffer_start,
                     op,
-                    data: data.clone(),
+                    data: data.iter().copied().collect(),
                 }),
                 ..Default::default()
             },

@@ -1,9 +1,8 @@
 use std::iter::once;
-use std::rc::Rc;
 
 use anyhow::{anyhow, Result};
 use im::hashmap::HashMap;
-use im::HashSet;
+use im::{HashSet, Vector};
 use log::trace;
 use serde::{Deserialize, Serialize};
 
@@ -11,19 +10,16 @@ use crate::code::Code;
 use crate::elf::{Data, Program};
 use crate::instruction::{Args, DecodingError, Instruction};
 
-pub fn read_bytes(buf: &[u8], index: &mut usize, num_bytes: usize) -> Vec<u8> {
-    let remaining_len = buf.len() - *index;
+pub fn read_bytes(buf: &mut Vector<u8>, num_bytes: usize) -> Vector<u8> {
+    let remaining_len = buf.len();
     let limit = num_bytes.min(remaining_len);
-    let read = buf[*index..(*index + limit)].to_vec();
+    let read = buf.slice(0..limit);
     log::trace!(
-        "read: 0x{:0x}, {:?}, data.len: {:?}, data: {:?}",
-        index,
+        "read: {:?}, data.len: {:?}, data: {:?}",
         remaining_len,
         buf.len(),
         read
     );
-
-    *index += limit;
     read
 }
 
@@ -83,19 +79,9 @@ impl StateMemory {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct StorageDeviceTape {
-    pub data: Rc<[u8]>,
-    pub read_index: usize,
-}
-
-impl Default for StorageDeviceTape {
-    fn default() -> Self {
-        Self {
-            data: [].into(),
-            read_index: 0,
-        }
-    }
+    pub data: Vector<u8>,
 }
 
 /// Converts raw bytes in [`Data`] to an [`StorageDeviceTape`] for consumption
@@ -103,8 +89,7 @@ impl Default for StorageDeviceTape {
 impl From<Data> for StorageDeviceTape {
     fn from(data: Data) -> Self {
         Self {
-            data: data.0.values().copied().collect::<Rc<[u8]>>(),
-            read_index: 0,
+            data: data.0.values().copied().collect(),
         }
     }
 }
@@ -211,11 +196,9 @@ impl State {
             memory: StateMemory::new(once(ro_memory), once(rw_memory)),
             private_tape: StorageDeviceTape {
                 data: raw_tapes.private_tape.into(),
-                read_index: 0,
             },
             public_tape: StorageDeviceTape {
                 data: raw_tapes.public_tape.into(),
-                read_index: 0,
             },
             ..Default::default()
         }

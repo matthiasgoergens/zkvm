@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 ubuntu:latest as builder-stage
+FROM --platform=linux/amd64 ubuntu:latest AS builder-stage
 
 # Set the working directory
 WORKDIR /root
@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install --yes curl git autoconf g++ build-essentia
 
 # Download and extract RISC-V GNU toolchain binaries
 RUN curl --fail --silent --show-error --location \
-         https://github.com/riscv-collab/riscv-gnu-toolchain/releases/download/2023.07.05/riscv32-elf-ubuntu-22.04-gcc-nightly-2023.07.05-nightly.tar.gz \
+         https://github.com/riscv-collab/riscv-gnu-toolchain/releases/download/2024.08.06/riscv32-elf-ubuntu-22.04-gcc-nightly-2024.08.06-nightly.tar.gz \
          | tar --extract --gzip --verbose
 
 # Set the environment variables
@@ -40,7 +40,7 @@ RUN autoconf && \
 
 RUN rm -f /root/riscv-tests/isa/.gitignore
 
-FROM scratch as exporter-stage
+FROM scratch AS exporter-stage
 
 # Copy all built tests to the host system
 COPY --from=builder-stage /root/riscv-tests/isa /
