@@ -7,7 +7,6 @@ tests for examples on cross-program-calls among other things.
 
 # TODO: set up formatting and linting for Python files in CI.
 import os
-import re
 import shlex
 import subprocess
 import unittest
