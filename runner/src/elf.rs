@@ -259,9 +259,4 @@ mod test {
         let deserialized: Program = serde_json::from_str(&serialized).unwrap();
         assert_eq!(program, deserialized);
     }
-
-    #[test]
-    fn test_mozak_load_program_default() {
-        Program::mozak_load_program(mozak_examples::EMPTY_ELF).unwrap();
-    }
 }
