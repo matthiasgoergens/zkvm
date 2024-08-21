@@ -14,6 +14,7 @@ anyhow = { version = "1.0", default-features = false }
 bitfield = "0.16"
 elf = { version = "0.7" }
 env_logger = { version = "0.11" }
+gdbstub = "0.7.2"
 im = "15.1"
 itertools = "0.13"
 log = "0.4"
