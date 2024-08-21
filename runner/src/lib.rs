@@ -16,6 +16,7 @@ pub mod ecall;
 pub mod elf;
 pub mod instruction;
 pub mod state;
+pub mod stub;
 #[cfg(any(feature = "test", test))]
 pub mod test_utils;
 pub mod vm;
