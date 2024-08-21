@@ -631,7 +631,6 @@ dependencies = [
  "env_logger",
  "itertools 0.13.0",
  "log",
- "mozak-examples",
  "mozak-runner",
  "proptest",
  "rkyv",
@@ -641,10 +640,6 @@ dependencies = [
  "starky",
  "tempfile",
 ]
-
-[[package]]
-name = "mozak-examples"
-version = "0.1.0"
 
 [[package]]
 name = "mozak-runner"
@@ -660,7 +655,6 @@ dependencies = [
  "itertools 0.13.0",
  "log",
  "mimalloc",
- "mozak-examples",
  "proptest",
  "serde",
  "serde_json",

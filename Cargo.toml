@@ -15,10 +15,8 @@
 # the part of this workspace
 
 [workspace]
-exclude = ["sdk"]
 members = [
   "cli",
-  "examples-builder",
   "runner",
 ]
 resolver = "2"
