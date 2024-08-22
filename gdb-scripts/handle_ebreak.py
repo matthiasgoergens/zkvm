@@ -15,7 +15,7 @@ class EbreakHandler(gdb.Command):
         """Handle stop events and check if the stop was due to an ebreak."""
         # if isinstance(event, gdb.SignalEvent) and event.stop_signal == "SIGTRAP":
         # Check the instruction at the current PC
-        print(f"Some event: {event} {type(event)}\n\t{dir(event)}\n\t{event.details}")
+        print(f"Some event: {event}\t{event.details}")
         
         pc = gdb.parse_and_eval("$pc")
 
@@ -26,9 +26,10 @@ class EbreakHandler(gdb.Command):
         # instruction = gdb.inferiors()[0].read_memory(pc, 4).cast(gdb.lookup_type("unsigned int"))
         print(f"instruction: {hex(instruction)}")
 
-        if instruction == 0x00100073:  # ebreak instruction in RISC-V
+        # Parsing the string here is a bit hacky, but it works for now.
+        if gdb.execute("x/i $pc", to_string=True).endswith('\tebreak\n'):
             print(f"Ebreak hit at address {pc}")
-            # gdb.execute("info registers")
+            gdb.execute("info registers")
             # Perform other custom actions here
             # gdb.execute("continue")  # Automatically continue execution
             gdb.execute("jump +1")
