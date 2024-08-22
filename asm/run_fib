@@ -2,11 +2,12 @@
 set -euxo pipefail
 
 # To get the assembly:
-riscv32-unknown-elf-gcc -S -o fib.s fib.c
+# riscv32-unknown-elf-gcc -S -o fib.s fib.c
 # To get the ELF:
-riscv32-unknown-elf-gcc -g -e _start -nostartfiles fib.c -o fib
-set +e
-qemu-riscv32-static fib
-echo $?
+# riscv32-unknown-elf-gcc -march=rv32im -g -e _start -nostartfiles fib.c -o fib
+riscv32-unknown-elf-gcc -march=rv32im -mabi=ilp32 -g -e _start -nostartfiles fib.c -o fib
+# set +e
+# qemu-riscv32-static fib
+# echo $?
 
 qemu-riscv32-static -g 1234 ../asm/fib

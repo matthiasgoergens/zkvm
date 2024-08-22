@@ -5,7 +5,6 @@ class EbreakHandler(gdb.Command):
 
     def __init__(self):
         super(EbreakHandler, self).__init__("handle-ebreak", gdb.COMMAND_USER)
-        self.last_pc = None
         self.setup_stop_hook()
 
     def setup_stop_hook(self):
@@ -14,23 +13,33 @@ class EbreakHandler(gdb.Command):
 
     def stop_handler(self, event):
         """Handle stop events and check if the stop was due to an ebreak."""
-        if isinstance(event, gdb.BreakpointEvent):
-            return  # Ignore if a breakpoint was hit
-
+        # if isinstance(event, gdb.SignalEvent) and event.stop_signal == "SIGTRAP":
         # Check the instruction at the current PC
+        print(f"Some event: {event} {type(event)}\n\t{dir(event)}\n\t{event.details}")
+        
         pc = gdb.parse_and_eval("$pc")
-        instruction = gdb.selected_frame().read_memory(pc, 4).cast(gdb.lookup_type("unsigned int"))
+
+        instruction_bytes = gdb.inferiors()[0].read_memory(pc, 4)
+
+        # Convert the bytes to an integer (assuming little-endian)
+        instruction = int.from_bytes(instruction_bytes, byteorder='little')
+        # instruction = gdb.inferiors()[0].read_memory(pc, 4).cast(gdb.lookup_type("unsigned int"))
+        print(f"instruction: {hex(instruction)}")
 
         if instruction == 0x00100073:  # ebreak instruction in RISC-V
             print(f"Ebreak hit at address {pc}")
-            gdb.execute("info registers")
+            # gdb.execute("info registers")
             # Perform other custom actions here
-            gdb.execute("continue")  # Automatically continue execution
+            # gdb.execute("continue")  # Automatically continue execution
+            gdb.execute("jump +1")
+        else:
+            print("'twas some other instruction")
+            gdb.execute("jump +1")
 
     def invoke(self, arg, from_tty):
         """Invoke the custom command (used to start monitoring)."""
         print("Ebreak handler active. Monitoring for ebreak instructions...")
-        gdb.execute("continue")
+        # gdb.execute("continue")
 
 # Register the command with GDB
 EbreakHandler()
