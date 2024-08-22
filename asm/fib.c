@@ -1,6 +1,10 @@
 unsigned int fib(unsigned int n) {
-    if (n < 2)
+    if (n < 2) {
+        asm volatile(
+            "ebreak\n"
+        );
         return n;
+    }
     else
         return fib(n-1) + fib(n-2);
 }

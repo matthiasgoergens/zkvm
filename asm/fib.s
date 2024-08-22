@@ -17,6 +17,12 @@ fib:
 	lw	a4,-20(s0)
 	li	a5,1
 	bgtu	a4,a5,.L2
+ #APP
+# 3 "fib.c" 1
+	ebreak
+
+# 0 "" 2
+ #NO_APP
 	lw	a5,-20(s0)
 	j	.L3
 .L2:
@@ -52,7 +58,7 @@ _start:
 	sw	a0,-20(s0)
 	lw	a5,-20(s0)
  #APP
-# 10 "fib.c" 1
+# 14 "fib.c" 1
 	mv a0, a5
 li a7, 93
 ecall
