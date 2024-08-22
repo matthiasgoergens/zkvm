@@ -1,0 +1,7 @@
+#!/bin/bash
+set -euxo pipefail
+
+# To get the assembly:
+riscv32-unknown-elf-gcc -S -o fib_alone.s fib_alone.c
+
+riscv32-unknown-elf-gcc -S -o fib_loop.s fib_loop.c

@@ -1,0 +1,10 @@
+#!/bin/bash
+set -euxo pipefail
+
+# To get the assembly:
+riscv32-unknown-elf-gcc -S -o exit.s exit.c
+# To get the ELF:
+riscv32-unknown-elf-gcc -e _start -nostartfiles exit.c -o exit
+set +e
+qemu-riscv32-static exit
+echo $?
