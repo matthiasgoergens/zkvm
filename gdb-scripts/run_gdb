@@ -1,3 +1,4 @@
 #!/bin/bash 
 set -euxo pipefail
 gdb -batch -x commands.gdb ../asm/fib_print
+# gdb -x commands.gdb ../asm/fib_print
