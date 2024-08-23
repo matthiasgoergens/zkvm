@@ -78,19 +78,18 @@ hash:
 	sw	a5,-44(s0)
 	li	a5,23
 	sw	a5,-20(s0)
-	ld	a5,-56(s0)
-	lw	a4,-20(s0)
+	lw	a5,-20(s0)
+	mv	a3,a5
+	ld	a5,-40(s0)
+	lw	a4,-44(s0)
 	mv	a2,a4
-	ld	a4,-40(s0)
-	lw	a3,-44(s0)
-	mv	a1,a3
-	ld	a3,-56(s0)
+	ld	a4,-56(s0)
 #APP
-# 17 "fib_print.c" 1
-	mv a0, 0(a5)
-mv a1, a2
-mv a2, a4
-mv a3, a1
+# 15 "fib_print.c" 1
+	mv a0, a3
+mv a1, a5
+mv a2, a2
+mv a3, a4
 ebreak
 
 # 0 "" 2
@@ -109,10 +108,16 @@ ebreak
 	.section	.rodata
 	.align	3
 .LC0:
-	.string	"exit_code1: %d\n"
+	.string	"fib: %d\n"
 	.align	3
 .LC1:
 	.string	"Hello, World!\n"
+	.align	3
+.LC2:
+	.string	"output: "
+	.align	3
+.LC3:
+	.string	"%x "
 	.text
 	.align	1
 	.globl	main
@@ -131,10 +136,6 @@ main:
 	mv	a5,a0
 	sd	a1,-96(s0)
 	sw	a5,-84(s0)
-	li	a0,5
-	call	fib
-	mv	a5,a0
-	sw	a5,-20(s0)
 	li	a0,10
 	call	fib
 	mv	a5,a0
@@ -157,6 +158,31 @@ main:
 	mv	a1,a5
 	ld	a0,-32(s0)
 	call	hash
+	lui	a5,%hi(.LC2)
+	addi	a0,a5,%lo(.LC2)
+	call	printf
+	sw	zero,-20(s0)
+	j	.L6
+.L7:
+	lw	a5,-20(s0)
+	addi	a5,a5,-16
+	add	a5,a5,s0
+	lbu	a5,-56(a5)
+	sext.w	a5,a5
+	mv	a1,a5
+	lui	a5,%hi(.LC3)
+	addi	a0,a5,%lo(.LC3)
+	call	printf
+	lw	a5,-20(s0)
+	addiw	a5,a5,1
+	sw	a5,-20(s0)
+.L6:
+	lw	a5,-20(s0)
+	sext.w	a4,a5
+	li	a5,31
+	ble	a4,a5,.L7
+	li	a0,10
+	call	putchar
 	li	a5,0
 	mv	a0,a5
 	ld	ra,88(sp)

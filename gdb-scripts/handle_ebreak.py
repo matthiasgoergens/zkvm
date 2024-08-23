@@ -22,19 +22,6 @@ class EbreakHandler(gdb.Command):
 
         instruction_bytes = gdb.inferiors()[0].read_memory(pc, 4)
 
-        fun = gdb.parse_and_eval("$a0")
-        print(f"fun: {fun}")
-        if fun == 23:
-            start = gdb.parse_and_eval("$a1")
-            len = gdb.parse_and_eval("$a2")
-            output = gdb.parse_and_eval("$a3")
-            buf = gdb.inferiors()[0].read_memory(start, len)
-            print(sha256(buf).hexdigest())
-
-            hash_result = sha256(buf).digest()
-            gdb.inferiors()[0].write_memory(output, hash_result)
-
-
         # Convert the bytes to an integer (assuming little-endian)
         instruction = int.from_bytes(instruction_bytes, byteorder='little')
         # instruction = gdb.inferiors()[0].read_memory(pc, 4).cast(gdb.lookup_type("unsigned int"))
@@ -42,6 +29,22 @@ class EbreakHandler(gdb.Command):
 
         # Parsing the string here is a bit hacky, but it works for now.
         if gdb.execute("x/i $pc", to_string=True).endswith('\tebreak\n'):
+            fun = gdb.parse_and_eval("$a0")
+            print(f"fun: {fun}")
+            if fun == 23:
+                start = gdb.parse_and_eval("$a1")
+                len = gdb.parse_and_eval("$a2")
+                output = gdb.parse_and_eval("$a3")
+                buf = gdb.inferiors()[0].read_memory(start, len)
+                print(sha256(buf).hexdigest())
+
+                hash_result = sha256(buf).digest()
+                gdb.inferiors()[0].write_memory(output, hash_result)
+            elif fun = 19:
+                # TODO: implement signature verification.
+                pass
+
+
             print(f"Ebreak hit at address {pc}")
             # gdb.execute("info registers")
             # Perform other custom actions here
