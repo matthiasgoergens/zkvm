@@ -1,4 +1,5 @@
 import gdb
+import hashlib
 
 class EbreakHandler(gdb.Command):
     """GDB Command to handle ebreak instructions automatically."""
