@@ -1,6 +1,0 @@
-/target
-*.tape_debug
-*.tape_bin
-
-# Generated programs map
-programs_map.json
