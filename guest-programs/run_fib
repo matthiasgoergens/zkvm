@@ -1,0 +1,10 @@
+#!/bin/bash
+set -euxo pipefail
+
+# To get the assembly:
+gcc -S -o fib_print.s fib_print.c
+
+# To get the ELF:
+gcc -g fib_print.c -o fib_print
+
+./fib_print
