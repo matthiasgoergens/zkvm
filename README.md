@@ -63,3 +63,10 @@ Hmm, we can't use GDB inside a qemu'd container, so let's just use a native cont
 docker build --tag eternis-riscv64 .
 docker run --rm -it -v $(pwd):/work -w /work eternis-riscv64
 ```
+
+Then inside the container:
+
+```bash
+cd guest-programs/
+bash run_hash
+```
