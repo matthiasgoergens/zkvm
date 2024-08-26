@@ -37,8 +37,17 @@ docker build --file riscv-qemu.Dockerfile --tag eternis-riscv64-qemu .
 Bind mount current directory, and set workdir:
 
 ```bash
-docker run --rm -it --platform linux/riscv64 -v $(pwd):/work -w /work eternis-riscv64
+docker run --rm -it --platform linux/riscv64 -v $(pwd):/work -w /work eternis-riscv64-qemu
 ```
+
+Then inside the container:
+
+```bash
+cd guest-programs/
+bash run_fib
+```
+
+Unfortunately, this technique doesn't work with GDB.  See below for why that matters.
 
 # Bonus challenge: custom instructions
 
@@ -46,12 +55,11 @@ The bonus challange asks us to custom implement instructions for some cryptograp
 
 In production usage, you might want to add the custom instruction directly to QEMU itself.  But that's a lot more work, and I would only do that after some profiling showed that the custom instruction (or gdb itself) was a bottleneck.  Keep in mind that the heavy lifting is not done in Python, but in a C extension.  So it's probably not as slow as you might think.
 
-
-
 # With qemu
 
 Hmm, we can't use GDB inside a qemu'd container, so let's just use a native container:
 
 ```bash
 docker build --tag eternis-riscv64 .
+docker run --rm -it -v $(pwd):/work -w /work eternis-riscv64
 ```

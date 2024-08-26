@@ -1,0 +1,13 @@
+#!/bin/bash
+set -euxo pipefail
+
+# To get the assembly:
+riscv64-unknown-linux-gnu-gcc -S -o hash.s hash.c
+
+# To get the ELF:
+riscv64-unknown-linux-gnu-gcc -g hash.c -o hash
+
+# Run our guest program via qemu in the background:
+qemu-riscv64-static -g 1234 -L /opt/riscv64-gnu-toolchain-glibc-bin/sysroot/ hash &
+
+gdb -batch -x ../gdb-scripts/commands.gdb hash

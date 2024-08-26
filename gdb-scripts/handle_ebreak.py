@@ -54,7 +54,7 @@ class EbreakHandler(gdb.Command):
         # have to worry about compressed instructions.
         # Parsing the string here is a bit hacky, but it works for now.
         if gdb.execute("x/i $pc", to_string=True).endswith("\tebreak\n"):
-            print(f"Ebreak hit at address {pc}")
+            print(f"Ebreak hit")
             handle_custom_instructions()
             # We've handled our custom instruction, it's time to jump to the
             # next instruction.

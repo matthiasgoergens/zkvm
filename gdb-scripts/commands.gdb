@@ -1,3 +1,9 @@
+# commands.gdb
+
+# Connect to the remote target
+target remote :1234
 source ../gdb-scripts/handle_ebreak.py
 handle-ebreak
-start
+
+# Continue execution
+continue
