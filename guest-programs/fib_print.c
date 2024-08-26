@@ -2,14 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 
-unsigned int fib(unsigned int n) {
-  if (n < 2) {
-    return n;
-  } else
-    return fib(n - 1) + fib(n - 2);
-}
-
-int hash(char *str, unsigned int len, char *output) {
+// This one would go into a header file of our VM's standard library.
+int sha256(char *str, unsigned int len, char *output) {
   int syscall_number = 23;
 
   asm volatile(
@@ -22,13 +16,17 @@ int hash(char *str, unsigned int len, char *output) {
       // move the output pointer to a3
       "mv a3, %3\n"
       "ebreak\n"
-      // : "=m" (*output) /* output operand */
       :
-      // : "=m" (*(char (*)[32])output) /* Indicate that up to 32 bytes of memory are modified */
-      
       : "r"(syscall_number), "r"(str), "r"(len), "r"(output)
       : "memory" // clobbers
       );
+}
+
+unsigned int fib(unsigned int n) {
+  if (n < 2) {
+    return n;
+  } else
+    return fib(n - 1) + fib(n - 2);
 }
 
 int main(int argc, char **argv) {
@@ -37,7 +35,7 @@ int main(int argc, char **argv) {
   char *str = "Hello, World!\n";
   unsigned int len = strlen(str);
   char output[32];
-  hash(str, len, output);
+  sha256(str, len, output);
   printf("output: ");
   for(int i = 0; i < 32; i++) {
     printf("%x ", output[i]);
