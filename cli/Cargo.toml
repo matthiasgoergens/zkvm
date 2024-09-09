@@ -29,7 +29,7 @@ itertools = "0.13"
 log = "0.4"
 mozak-examples = { path = "../examples-builder", optional = true }
 rkyv = { version = "=0.8.0-alpha.1", default-features = false, features = ["pointer_width_32", "alloc"] }
-rkyv_derive = "=0.8.0-alpha.1"
+rkyv_derive = "=0.8.0-rc.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 starky = { workspace = true, default-features = false }
